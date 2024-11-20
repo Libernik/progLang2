@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  <title>Менеджер паролей</title>
+  <link rel="icon" href="icon.png" type="image/png">
+</head>
+
+<body>
+  <h1>Менеджер паролей</h1>
+  <form id="password-form">
+    <label>
+      Сайт:
+      <input type="text" id="site-url" required>
+    </label>
+    <br>
+    <label>
+      Логин:
+      <input type="text" id="login" required>
+    </label>
+    <br>
+    <label>
+      Пароль:
+      <input type="text" id="password" required>
+    </label>
+
+    <br>
+    <button type="submit">Добавить</button>
+    <br><br><br>
+    <label>
+      Длина пароля:
+      <input type="number" id="password-length" value="10" min="3" max="100">
+    </label>
+    <br>
+    <label>
+      Спец. символы:
+      <input type="checkbox" id="use-special-chars" checked>
+    </label>
+    <br>
+    <button type="button" id="generate-password">Сгенерировать пароль</button>
+
+  </form>
+
+  <h2>Список паролей</h2>
+  <ul id="password-list"></ul>
+
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('service-worker.js')
+        .then(() => console.log('Service Worker зарегистрирован'))
+        .catch(err => console.error('Service Worker не зарегистрирован:', err));
+    }
+
+    const passwordList = JSON.parse(localStorage.getItem('passwords')) || [];
+
+    const form = document.getElementById('password-form');
+    const siteUrlInput = document.getElementById('site-url');
+    const loginInput = document.getElementById('login');
+    const passwordInput = document.getElementById('password');
+    const passwordLengthInput = document.getElementById('password-length');
+    const useSpecialCharsInput = document.getElementById('use-special-chars');
+    const passwordListEl = document.getElementById('password-list');
+    const generateBtn = document.getElementById('generate-password');
+
+    function renderPasswords() {
+      passwordListEl.innerHTML = '';
+      passwordList.forEach((entry, index) => {
+        const li = document.createElement('li');
+        li.innerHTML = `
+          <div>
+            <strong>Сайт:</strong> ${entry.url} <br>
+            <strong>Логин:</strong> ${entry.login} <br>
+            <strong>Пароль:</strong> ${entry.password}
+          </div>
+          <button onclick="deletePassword(${index})">Удалить</button>
+        `;
+        passwordListEl.appendChild(li);
+      });
+    }
+
+    form.addEventListener('submit', e => {
+      e.preventDefault();
+      const url = siteUrlInput.value;
+      const login = loginInput.value;
+      const password = passwordInput.value;
+
+      passwordList.push({ url, login, password });
+      localStorage.setItem('passwords', JSON.stringify(passwordList));
+
+      renderPasswords();
+      form.reset();
+    });
+
+    function deletePassword(index) {
+      passwordList.splice(index, 1);
+      localStorage.setItem('passwords', JSON.stringify(passwordList));
+      renderPasswords();
+    }
+
+    function generatePassword(length = 12, useSpecialChars = true) {
+      const symbols = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
+      const special = '!@#$%^&*()-_=+[]{}|;:",.<>?/`~';
+      const chars = symbols + (useSpecialChars ? special : '');
+
+      let password = '';
+      for (let i = 0; i < length; i++) {
+        password += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+      return password;
+    }
+
+    generateBtn.addEventListener('click', () => {
+      const length = parseInt(passwordLengthInput.value);
+      const useSpecialChars = useSpecialCharsInput.checked;
+      const newPassword = generatePassword(length, useSpecialChars);
+      passwordInput.value = newPassword;
+    });
+
+    renderPasswords();
+  </script>
+</body>
+
+</html>
